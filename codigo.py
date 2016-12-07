@@ -14,6 +14,7 @@ AUTH_LINE_SEPARATOR = '\\n'
 # (i.e. in a certificate)
 AUTH_NEW_LINE_SEPARATOR = '\\\\n'
 
+
 @app.errorhandler(404)
 def not_found(error):
     return make_response(jsonify({'error': 'Not found'}), 404)
@@ -23,8 +24,8 @@ def not_found(error):
 @app.route('/todo/api/v2.0/templates/<string:template_name>', methods=['DELETE'])
 def delete_templates(template_name):
     # Ruta de los custom templates 
-    ruta = '/ec3/custom_templates/' + template_name + '.radl'
-    
+    ruta = EC3_HOME + '/custom_templates/' + template_name + '.radl'
+
     # Borramos si el existe el template y es un fichero
     if not os.path.exists(ruta):
         abort(404)
@@ -37,9 +38,12 @@ def delete_templates(template_name):
 # POST a custom template
 @app.route('/todo/api/v2.0/templates', methods=['POST'])
 def post_templates():
+
     f = request.files['files']
     nombre_fichero = f.filename
-    ruta = '/ec3/custom_templates/' + nombre_fichero
+    
+
+    ruta = EC3_HOME + '/custom_templates/' + nombre_fichero
     f.save(ruta)
     return '200'
 
@@ -47,7 +51,7 @@ def post_templates():
 @app.route('/todo/api/v2.0/templates', methods=['GET'])
 def templates():
 
-    ruta_ec3 = "/ec3/ec3 "
+    ruta_ec3 = EC3_HOME + "/ec3 "
     orden = "templates "
 
     if request.json:
@@ -109,7 +113,7 @@ def create_cluster():
     tfile.close()
 
     # Formatting other parameters
-    ruta_ec3 = "/ec3/ec3 "
+    ruta_ec3 = EC3_HOME + "/ec3 "
     orden = "launch "
     nombre_cluster = task['clustername']
     
@@ -129,33 +133,46 @@ def create_cluster():
 # GET all clusters info
 @app.route('/todo/api/v2.0/clusters', methods=['GET'])
 def get_clusters():
-    output = subprocess.Popen("/ec3/ec3 list -r --json", shell=True, stdout=subprocess.PIPE).stdout.read()
+    
+    command = EC3_HOME + "/ec3 list -r --json"
+    output = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE).stdout.read()
+    
     return output
 
 # GET specific cluster info
 @app.route('/todo/api/v2.0/clusters/<string:cluster_name>', methods=['GET'])
 def get_cluster(cluster_name):
-    output = subprocess.Popen("/ec3/ec3 show " + cluster_name + " --json", shell=True, stdout=subprocess.PIPE).stdout.read()
+
+    command = EC3_HOME + "/ec3 show " + cluster_name + " --json"
+    output = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE).stdout.read()
     return output
 
 # DELETE removing specific cluster
 @app.route('/todo/api/v2.0/clusters/<string:cluster_name>', methods=['DELETE'])
 def delete_cluster(cluster_name):
-    proc = subprocess.Popen("/ec3/ec3 destroy " + cluster_name + " --force", shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+    
+    command = EC3_HOME + "/ec3 destroy " + cluster_name + " --force" 
+    proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     output = proc.communicate("y")
     return output
 
 # UPDATE cluster
 @app.route('/todo/api/v2.0/clusters/<string:cluster_name>', methods=['POST'])
 def update_cluster(cluster_name):
-    parameters = request.json['parameters']
-    print(parameters)
 
-    output = subprocess.Popen("/ec3/ec3 reconfigure " + cluster_name + " --add \"" + parameters + "\"", shell=True, stdout=subprocess.PIPE).stdout.read()
+    parameters = request.json['parameters']
+    command = EC3_HOME + "/ec3 reconfigure " + cluster_name + " --add \"" + parameters + "\""
+    output = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE).stdout.read()
     return output
 
 ###########################################################################################################
 
 if __name__ == '__main__':
-    app.run(debug=True)
+        try:
+           EC3_HOME = os.environ['EC3_HOME']
+        except KeyError:
+           print "Please set the environment variable EC3_HOME"
+           sys.exit(1)
+        #app.run(debug=True)
+        app.run(host='0.0.0.0')
 
