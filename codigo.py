@@ -104,7 +104,7 @@ def create_cluster():
     auth_data = request.headers['AUTHORIZATION'].replace(AUTH_NEW_LINE_SEPARATOR, "\n")
     auth_data = auth_data.split(AUTH_LINE_SEPARATOR)
 
-    (fd, filename) = tempfile.mkstemp(dir='/ec3')
+    (fd, filename) = tempfile.mkstemp(dir=EC3_HOME)
     tfile = os.fdopen(fd, "w")
     for auth in auth_data:
         tfile.write(auth)
